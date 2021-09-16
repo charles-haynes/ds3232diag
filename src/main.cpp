@@ -28,10 +28,10 @@ typedef union {
     /* 12 */ uint8_t :6, lsbTemp : 2; 
     /* 13 */ uint8_t unused : 8;
     // 14-FF SRAM
-  } f;
+  };
 } RTCregisters;
 
-#define field(FIELD) (regs.f.FIELD?" "#FIELD:"")
+#define field(VAR, FIELD) (VAR.FIELD?" "#FIELD:"")
 
 void printRTC() {
   RTCregisters regs;
@@ -51,41 +51,41 @@ void printRTC() {
       regs.b[0x0f], regs.b[0x10], regs.b[0x11], regs.b[0x12], regs.b[0x13]);
   Serial.printf("err: %d", err);
   Serial.print(", 0E:");
-  Serial.print(field(notEOSC));
-  Serial.print(field(bbsqw));
-  Serial.print(field(conv));
-  Serial.print(field(rs2));
-  Serial.print(field(rs1));
-  Serial.print(field(intcn));
-  Serial.print(field(a2ie));
-  Serial.print(field(a1ie));
+  Serial.print(field(regs,notEOSC));
+  Serial.print(field(regs,bbsqw));
+  Serial.print(field(regs,conv));
+  Serial.print(field(regs,rs2));
+  Serial.print(field(regs,rs1));
+  Serial.print(field(regs,intcn));
+  Serial.print(field(regs,a2ie));
+  Serial.print(field(regs,a1ie));
   Serial.printf(", 0F:");
-  Serial.print(field(osf));
-  Serial.print(field(bb32khz));
-  Serial.print(field(crate1));
-  Serial.print(field(crate0));
-  Serial.print(field(en32khz));
-  Serial.print(field(bsy));
-  Serial.print(field(a2f));
-  Serial.print(field(a1f));
-  Serial.printf(", temp: %d.%02dC\n", regs.f.msbTemp,
-      regs.f.msbTemp < 0 ? (4 - regs.f.lsbTemp) % 4 * 25 : regs.f.lsbTemp * 25);
-  Serial.printf("date: %d%d/%d%d/%d%d %d%d:%d%d:%d%d\n", regs.f.tensDate,
-                regs.f.onesDate, regs.f.tensMonth, regs.f.onesMonth,
-                regs.f.tensYear, regs.f.onesYear, regs.f.tensHours,
-                regs.f.onesHours, regs.f.tensMinutes, regs.f.onesMinutes,
-                regs.f.tensSeconds, regs.f.onesSeconds);
+  Serial.print(field(regs,osf));
+  Serial.print(field(regs,bb32khz));
+  Serial.print(field(regs,crate1));
+  Serial.print(field(regs,crate0));
+  Serial.print(field(regs,en32khz));
+  Serial.print(field(regs,bsy));
+  Serial.print(field(regs,a2f));
+  Serial.print(field(regs,a1f));
+  Serial.printf(", temp: %d.%02dC\n", regs.msbTemp,
+      regs.msbTemp < 0 ? (4 - regs.lsbTemp) % 4 * 25 : regs.lsbTemp * 25);
+  Serial.printf("date: %d%d/%d%d/%d%d %d%d:%d%d:%d%d\n", regs.tensDate,
+                regs.onesDate, regs.tensMonth, regs.onesMonth,
+                regs.tensYear, regs.onesYear, regs.tensHours,
+                regs.onesHours, regs.tensMinutes, regs.onesMinutes,
+                regs.tensSeconds, regs.onesSeconds);
   Serial.printf("a1: %x %s %d%d %d%d:%d%d:%d%d\n", 
-                regs.f.a1m4<<3|regs.f.a1m3<<2|regs.f.a1m2<<1|regs.f.a1m1, 
-                regs.f.a1DayDate?"day":"date",
-                regs.f.a1TensDate, regs.f.a1OnesDate, regs.f.a1TensHour,
-                regs.f.a1OnesHour, regs.f.a1TensMinutes, regs.f.a1OnesMinutes,
-                regs.f.a1TensSeconds, regs.f.a1OnesSeconds);
+                regs.a1m4<<3|regs.a1m3<<2|regs.a1m2<<1|regs.a1m1, 
+                regs.a1DayDate?"day":"date",
+                regs.a1TensDate, regs.a1OnesDate, regs.a1TensHour,
+                regs.a1OnesHour, regs.a1TensMinutes, regs.a1OnesMinutes,
+                regs.a1TensSeconds, regs.a1OnesSeconds);
   Serial.printf("a2: %x %s %d%d %d%d:%d%d\n", 
-                regs.f.a2m4<<2|regs.f.a2m3<<1|regs.f.a2m2, 
-                regs.f.a2DayDate?"day":"date",
-                regs.f.a2TensDate, regs.f.a2OnesDate, regs.f.a2TensHour,
-                regs.f.a2OnesHour, regs.f.a2TensMinutes, regs.f.a2OnesMinutes );
+                regs.a2m4<<2|regs.a2m3<<1|regs.a2m2, 
+                regs.a2DayDate?"day":"date",
+                regs.a2TensDate, regs.a2OnesDate, regs.a2TensHour,
+                regs.a2OnesHour, regs.a2TensMinutes, regs.a2OnesMinutes );
 }
 
 void setup() {
