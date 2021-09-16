@@ -68,12 +68,24 @@ void printRTC() {
   Serial.print(field(bsy));
   Serial.print(field(a2f));
   Serial.print(field(a1f));
-  Serial.printf(", temp: %d.%02dC", regs.f.msbTemp, regs.f.lsbTemp * 25);
-  Serial.printf(", %d%d/%d%d/%d%d %d%d:%d%d:%d%d\n", regs.f.tensDate,
+  Serial.printf(", temp: %d.%02dC\n", regs.f.msbTemp,
+      regs.f.msbTemp < 0 ? (4 - regs.f.lsbTemp) % 4 * 25 : regs.f.lsbTemp * 25);
+  Serial.printf("date: %d%d/%d%d/%d%d %d%d:%d%d:%d%d\n", regs.f.tensDate,
                 regs.f.onesDate, regs.f.tensMonth, regs.f.onesMonth,
                 regs.f.tensYear, regs.f.onesYear, regs.f.tensHours,
                 regs.f.onesHours, regs.f.tensMinutes, regs.f.onesMinutes,
                 regs.f.tensSeconds, regs.f.onesSeconds);
+  Serial.printf("a1: %x %s %d%d %d%d:%d%d:%d%d\n", 
+                regs.f.a1m4<<3|regs.f.a1m3<<2|regs.f.a1m2<<1|regs.f.a1m1, 
+                regs.f.a1DayDate?"day":"date",
+                regs.f.a1TensDate, regs.f.a1OnesDate, regs.f.a1TensHour,
+                regs.f.a1OnesHour, regs.f.a1TensMinutes, regs.f.a1OnesMinutes,
+                regs.f.a1TensSeconds, regs.f.a1OnesSeconds);
+  Serial.printf("a2: %x %s %d%d %d%d:%d%d\n", 
+                regs.f.a2m4<<2|regs.f.a2m3<<1|regs.f.a2m2, 
+                regs.f.a2DayDate?"day":"date",
+                regs.f.a2TensDate, regs.f.a2OnesDate, regs.f.a2TensHour,
+                regs.f.a2OnesHour, regs.f.a2TensMinutes, regs.f.a2OnesMinutes );
 }
 
 void setup() {
