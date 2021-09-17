@@ -70,9 +70,9 @@ void printRTC() {
   Serial.print(field(regs,a1f));
   Serial.printf(", temp: %d.%02dC\n", regs.msbTemp,
       regs.msbTemp < 0 ? (4 - regs.lsbTemp) % 4 * 25 : regs.lsbTemp * 25);
-  Serial.printf("date: %d%d/%d%d/%d%d %d%d:%d%d:%d%d\n", regs.tensDate,
+  Serial.printf("date: %d%d/%d%d/%d%d%d %d%d:%d%d:%d%d\n", regs.tensDate,
                 regs.onesDate, regs.tensMonth, regs.onesMonth,
-                regs.tensYear, regs.onesYear, regs.tensHours,
+                regs.century, regs.tensYear, regs.onesYear, regs.tensHours,
                 regs.onesHours, regs.tensMinutes, regs.onesMinutes,
                 regs.tensSeconds, regs.onesSeconds);
   Serial.printf("a1: %x %s %d%d %d%d:%d%d:%d%d\n", 
