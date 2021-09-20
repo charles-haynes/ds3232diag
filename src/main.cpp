@@ -2,6 +2,8 @@
 // https://github.com/JChristensen/DS3232RTC
 #include <DS3232RTC.h>
 
+#include "i2c_scanner.h"
+
 DS3232RTC RTC;
 
 typedef union {
@@ -90,6 +92,13 @@ void printRTC() {
 
 void setup() {
   Serial.begin(115200);
+  i2c_scan();
+  if (!devices[0x18]) {
+    Serial.println("no BMA423 found");
+  }
+  if (!devices[0x68]) {
+    Serial.println("no DS3231 RTC found");
+  }
   RTC.begin();
   printRTC();
   RTC.writeRTC(0x0E, 0X04);
@@ -97,6 +106,9 @@ void setup() {
 }
 
 void loop() {
+  if (!devices[0x68]) {
+    Serial.println("no DS3231 RTC found");
+  }
   printRTC();
   delay(10000);
 }
