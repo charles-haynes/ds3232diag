@@ -35,6 +35,9 @@ typedef union {
 
 #define field(VAR, FIELD) (VAR.FIELD?" "#FIELD:"")
 
+bool timeIsSet = false;
+uint8_t secs = 0;
+
 void printRTC() {
   RTCregisters regs;
   static_assert(sizeof(regs) <= 32, "regs too big for single I2C read");
@@ -72,26 +75,56 @@ void printRTC() {
   Serial.print(field(regs,a1f));
   Serial.printf(", temp: %d.%02dC\n", regs.msbTemp,
       regs.msbTemp < 0 ? (4 - regs.lsbTemp) % 4 * 25 : regs.lsbTemp * 25);
-  Serial.printf("date: %d%d/%d%d/%d%d%d %d%d:%d%d:%d%d\n", regs.tensDate,
-                regs.onesDate, regs.tensMonth, regs.onesMonth,
-                regs.century, regs.tensYear, regs.onesYear, regs.tensHours,
+  Serial.printf("date: %d%d/%d%d/%d%d%d %d %d%d:%d%d:%d%d\n", regs.tensDate,
+                regs.onesDate, regs.tensMonth, regs.onesMonth, regs.century,
+                regs.tensYear, regs.onesYear, regs.day, regs.tensHours,
                 regs.onesHours, regs.tensMinutes, regs.onesMinutes,
                 regs.tensSeconds, regs.onesSeconds);
-  Serial.printf("a1: %x %s %d%d %d%d:%d%d:%d%d\n", 
-                regs.a1m4<<3|regs.a1m3<<2|regs.a1m2<<1|regs.a1m1, 
-                regs.a1DayDate?"day":"date",
-                regs.a1TensDate, regs.a1OnesDate, regs.a1TensHour,
-                regs.a1OnesHour, regs.a1TensMinutes, regs.a1OnesMinutes,
-                regs.a1TensSeconds, regs.a1OnesSeconds);
+  Serial.printf("a1: %x %s %d%d %d%d:%d%d:%d%d\n",
+                regs.a1m4 << 3 | regs.a1m3 << 2 | regs.a1m2 << 1 | regs.a1m1,
+                regs.a1DayDate ? "day" : "date", regs.a1TensDate,
+                regs.a1OnesDate, regs.a1TensHour, regs.a1OnesHour,
+                regs.a1TensMinutes, regs.a1OnesMinutes, regs.a1TensSeconds,
+                regs.a1OnesSeconds);
   Serial.printf("a2: %x %s %d%d %d%d:%d%d\n", 
                 regs.a2m4<<2|regs.a2m3<<1|regs.a2m2, 
                 regs.a2DayDate?"day":"date",
                 regs.a2TensDate, regs.a2OnesDate, regs.a2TensHour,
                 regs.a2OnesHour, regs.a2TensMinutes, regs.a2OnesMinutes );
+  if (regs.notEOSC) {
+    Serial.println("* oscillator disabled [!EOSC = 1]");
+  }
+  if (regs.osf) {
+    Serial.println("* oscillator stopped [OSC = 1]");
+  }
+  if (!regs.intcn) {
+    Serial.println("* square wave enabled not timer interrupt [INTCN = 0]");
+  }
+  if (regs.b[0x00] > 0x50 || regs.onesSeconds > 9) {
+    Serial.println("* seconds out of range");
+  }
+  if (regs.b[0x01] > 0x50 || regs.onesMinutes > 9) {
+    Serial.println("* minutes out of range");
+  }
+  if (regs.b[0x03] > 0x07) {
+    Serial.println("* day out of range");
+  }
+  if (regs.b[0x04] > 0x30 || regs.onesDate > 9) {
+    Serial.println("* date out of range");
+  }
+  if (regs.b[0x11] == 0 && regs.b[0x12] == 0) {
+    Serial.println("* temp = 0c");
+  }
+  if (timeIsSet && secs == regs.b[0x07]) {
+    Serial.println("* secs not changing");
+  }
+  secs = regs.b[0x07];
+  timeIsSet = true;
 }
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("DS3232 I2C diagnostic");
   i2c_scan();
   if (!devices[0x18]) {
     Serial.println("no BMA423 found");
