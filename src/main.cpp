@@ -4,6 +4,15 @@
 
 #include "i2c_scanner.h"
 
+#if ENABLE_OTA
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
+
+unsigned long lastPrint = 0;
+#endif
+
 DS3232RTC RTC;
 
 typedef union {
@@ -100,11 +109,18 @@ void printRTC() {
   if (!regs.intcn) {
     Serial.println("* square wave enabled not timer interrupt [INTCN = 0]");
   }
-  if (regs.b[0x00] > 0x50 || regs.onesSeconds > 9) {
+  if (regs.b[0x00] > 0x59 || regs.onesSeconds > 9) {
     Serial.println("* seconds out of range");
   }
-  if (regs.b[0x01] > 0x50 || regs.onesMinutes > 9) {
+  if (regs.b[0x01] > 0x59 || regs.onesMinutes > 9) {
     Serial.println("* minutes out of range");
+  }
+  if (regs.b[0x02] > 0x70 || regs.onesMinutes > 9 ||
+      (regs.twelveHR == 0 // 24 hour clock
+        && regs.pm && (regs.tensHours || regs.onesHours > 3)) ||
+      (regs.twelveHR == 1 // 12 hour clock
+        && regs.tensHours && regs.onesHours > 2)) {
+    Serial.printf("* hours out of range 0x%02x\n", regs.b[0x02]);
   }
   if (regs.b[0x03] > 0x07) {
     Serial.println("* day out of range");
@@ -115,10 +131,10 @@ void printRTC() {
   if (regs.b[0x11] == 0 && regs.b[0x12] == 0) {
     Serial.println("* temp = 0c");
   }
-  if (timeIsSet && secs == regs.b[0x07]) {
+  if (timeIsSet && secs == regs.b[0x00]) {
     Serial.println("* secs not changing");
   }
-  secs = regs.b[0x07];
+  secs = regs.b[0x00];
   timeIsSet = true;
 }
 
@@ -136,12 +152,62 @@ void setup() {
   printRTC();
   RTC.writeRTC(0x0E, 0X04);
   RTC.writeRTC(0x0F, 0X00);
+
+#if ENABLE_OTA
+  WiFi.mode(WIFI_STA);
+  WiFi.begin("your_ssid", "your_wifi_password");
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Connection Failed! Rebooting...");
+    delay(5000);
+    ESP.restart();
+  }
+  ArduinoOTA
+      .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH) {
+          type = "sketch";
+        } else {
+          // U_SPIFFS
+          type = "filesystem";
+        }
+
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS
+        // using SPIFFS.end()
+        Serial.println("Start updating " + type);
+      })
+      .onEnd([]() { Serial.println("\nEnd"); })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progress: %u%%\r", (progress * 100 / total));
+      })
+      .onError([](ota_error_t error) {
+        Serial.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) {
+          Serial.println("Auth Failed");
+        } else if (error == OTA_BEGIN_ERROR) {
+          Serial.println("Begin Failed");
+        } else if (error == OTA_CONNECT_ERROR) {
+          Serial.println("Connect Failed");
+        } else if (error == OTA_RECEIVE_ERROR) {
+          Serial.println("Receive Failed");
+        } else if (error == OTA_END_ERROR) {
+          Serial.println("End Failed");
+        }
+      });
+
+  ArduinoOTA.begin();
+#endif
 }
 
 void loop() {
-  if (!devices[0x68]) {
-    Serial.println("no DS3231 RTC found");
+#if ENABLE_OTA
+  if (millis() - lastPrint > 10000) {
+    printRTC();
+    lastPrint = millis();
   }
+  ArduinoOTA.handle();
+  delay(1);
+#else
   printRTC();
   delay(10000);
+#endif
 }
